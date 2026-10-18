@@ -1,0 +1,14 @@
+{
+  "name": "tag-arena",
+  "version": "1.0.0",
+  "description": "🎮 Jeu de tag multijoueur en ligne — joue avec tes amis en temps réel (WebSocket, Node.js)",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "keywords": ["game", "tag", "multiplayer", "websocket", "realtime"],
+  "license": "MIT",
+  "dependencies": {
+    "ws": "^8.16.0"
+  }
+}
