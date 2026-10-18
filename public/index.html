@@ -4,56 +4,119 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>🏃 Tag Arena — Joue avec tes amis</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <div class="stars"></div>
+  <!-- Fond animé : orbes + grille -->
+  <div class="bg">
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="orb orb-3"></div>
+    <div class="grid"></div>
+  </div>
 
-  <!-- Écran d'accueil -->
+  <!-- ============ ÉCRAN ACCUEIL ============ -->
   <div id="menu" class="screen">
-    <h1 class="logo">🏃 <span>Tag</span> Arena</h1>
-    <p class="tagline">Attrape tes amis... ou fuis-leur !</p>
-
-    <div class="card">
-      <input id="playerName" type="text" maxlength="16" placeholder="Ton pseudo" autocomplete="off">
-      <div class="btn-row">
-        <button id="btnCreate" class="btn btn-primary">🎮 Créer un salon</button>
-        <button id="btnJoinToggle" class="btn btn-secondary">🔑 Rejoindre</button>
+    <div class="menu-wrap">
+      <!-- Logo animé -->
+      <div class="logo-block">
+        <div class="logo-icon">🏃</div>
+        <h1 class="logo-title">TAG<span>ARENA</span></h1>
+        <p class="tagline">Attrape tes amis… ou fuis-leur !</p>
       </div>
-      <div id="joinBox" class="hidden">
-        <input id="roomCode" type="text" maxlength="6" placeholder="CODE DU SALON" autocomplete="off">
-        <button id="btnJoin" class="btn btn-primary">Rejoindre</button>
+
+      <!-- Carte pseudo -->
+      <div class="name-card">
+        <label for="playerName">🎭 Ton pseudo</label>
+        <input id="playerName" type="text" maxlength="16" placeholder="Ex : Speedy" autocomplete="off">
+      </div>
+
+      <!-- GROS BLOCS Créer / Rejoindre -->
+      <div class="big-blocks">
+        <button id="btnCreate" class="big-block block-create">
+          <span class="bb-icon">🎮</span>
+          <span class="bb-title">CRÉER</span>
+          <span class="bb-sub">Nouveau salon privé</span>
+          <span class="bb-glow"></span>
+        </button>
+
+        <button id="btnJoinToggle" class="big-block block-join">
+          <span class="bb-icon">🔑</span>
+          <span class="bb-title">REJOINDRE</span>
+          <span class="bb-sub">Entrer avec un code</span>
+          <span class="bb-glow"></span>
+        </button>
+      </div>
+
+      <!-- Bloc rejoindre (caché au départ) -->
+      <div id="joinBox" class="join-box hidden">
+        <label for="roomCode">🔢 Code du salon</label>
+        <div class="join-row">
+          <input id="roomCode" type="text" maxlength="6" placeholder="ABC123" autocomplete="off">
+          <button id="btnJoin" class="btn-go">GO ➜</button>
+        </div>
+      </div>
+
+      <!-- Stats fun -->
+      <div class="menu-footer">
+        <span>⚡ Temps réel</span>
+        <span>•</span>
+        <span>👥 Jusqu'à 8 joueurs</span>
+        <span>•</span>
+        <span>💬 Chat intégré</span>
       </div>
     </div>
   </div>
 
-  <!-- Écran du salon -->
+  <!-- ============ SALON ============ -->
   <div id="lobby" class="screen hidden">
-    <div class="card lobby-card">
-      <h2>Salon <span id="lobbyCode" class="code"></span></h2>
-      <p class="hint">Partage ce code à tes amis !
-        <button id="btnCopy" class="btn btn-small btn-secondary">📋 Copier</button>
-      </p>
-      <ul id="playerList" class="player-list"></ul>
-      <button id="btnStart" class="btn btn-primary hidden">▶ Lancer la partie</button>
-      <p id="lobbyHint" class="hint">En attente d'au moins 2 joueurs...</p>
+    <div class="lobby-wrap">
+      <div class="lobby-card">
+        <h2 class="lobby-title">🚪 Salon privé</h2>
+
+        <!-- Code géant à copier -->
+        <div class="code-block" id="btnCopy" title="Clique pour copier">
+          <span class="code-label">CODE DU SALON</span>
+          <span id="lobbyCode" class="code-big">------</span>
+          <span class="code-hint">📋 Clique pour copier</span>
+        </div>
+
+        <!-- Liste joueurs -->
+        <div class="players-block">
+          <h3>👥 Joueurs <span id="playerCount" class="count-badge">1</span></h3>
+          <ul id="playerList" class="player-list"></ul>
+        </div>
+
+        <button id="btnStart" class="btn-start hidden">▶ LANCER LA PARTIE</button>
+        <p id="lobbyHint" class="hint">⏳ En attente d'au moins 2 joueurs…</p>
+
+        <button id="btnLeaveLobby" class="btn-leave">← Quitter le salon</button>
+      </div>
     </div>
   </div>
 
-  <!-- Écran de jeu -->
+  <!-- ============ JEU ============ -->
   <div id="game" class="screen hidden">
     <div class="hud">
       <div id="timer" class="timer">⏱ 90</div>
       <div id="roleBadge" class="badge"></div>
       <div id="scoreboard" class="scoreboard"></div>
     </div>
-    <canvas id="canvas" width="800" height="560"></canvas>
-    <p class="controls">🎮 Déplace-toi avec les <b>flèches</b> ou <b>ZQSD / WASD</b></p>
+    <div class="canvas-wrap">
+      <canvas id="canvas" width="800" height="560"></canvas>
+    </div>
+    <p class="controls">🎮 Déplace-toi avec les <b>flèches</b> ou <b>ZQSD / WASD</b> — le chat 👑 doit attraper tout le monde !</p>
+
+    <!-- Chat en panneau -->
     <div class="chat-box">
+      <div class="chat-head">💬 Chat du salon</div>
       <ul id="chatLog"></ul>
       <div class="chat-input">
-        <input id="chatInput" type="text" maxlength="200" placeholder="Message...">
-        <button id="btnSend" class="btn btn-small btn-primary">Envoyer</button>
+        <input id="chatInput" type="text" maxlength="200" placeholder="Écris un message…">
+        <button id="btnSend" class="btn-send">➤</button>
       </div>
     </div>
   </div>
@@ -63,10 +126,10 @@
 
   <!-- Overlay fin de manche -->
   <div id="roundOverlay" class="overlay hidden">
-    <div class="card">
-      <h2>Fin de manche !</h2>
+    <div class="overlay-card">
+      <h2>🏁 Fin de manche !</h2>
       <ul id="roundScores"></ul>
-      <p>Nouvelle manche dans 5s...</p>
+      <p class="overlay-sub">Nouvelle manche dans 5s…</p>
     </div>
   </div>
 
