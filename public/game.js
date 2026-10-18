@@ -1,5 +1,8 @@
 // ============================================================
 // TAG ARENA — Client (en ligne + mode 2 joueurs local)
+// Mode "Hot Potato" : le porteur de la 💣 bombe doit la refiler !
+// Cooldown de 1s pour éviter le bug de transfert instantané.
+// À la fin du timer, le DERNIER porteur de la bombe perd (-1 pt).
 // ============================================================
 
 // ---------- Connexion WebSocket (mode en ligne) ----------
@@ -11,9 +14,11 @@ let isHost = false;
 let localMode = false;   // true = 2 joueurs sur le même PC
 let localP2Id = null;    // id du joueur 2 en local
 const players = new Map(); // id -> {name, color, x, y, score}
-let itId = null;
+let itId = null;         // id du porteur de la bombe
 let roundTime = 90;
 let localTimer = null;   // interval du timer en local
+let lastLocalTagAt = 0;  // cooldown local (anti-bug)
+const TAG_COOLDOWN_MS = 1000;
 const keys = {};         // état des touches (partagé par les 2 joueurs)
 
 // ---------- Éléments DOM ----------
@@ -79,23 +84,24 @@ function startLocalGame() {
   localMode = true;
   myId = 'local-p1';
   localP2Id = 'local-p2';
+  lastLocalTagAt = 0;
 
   players.clear();
   players.set('local-p1', { id: 'local-p1', name: n1, color: '#8b5cf6', x: 250, y: 280, score: 0 });
   players.set('local-p2', { id: 'local-p2', name: n2, color: '#22d3ee', x: 550, y: 280, score: 0 });
 
-  // Le joueur 1 est le chat au départ
+  // Le joueur 1 porte la bombe au départ
   itId = 'local-p1';
   roundTime = 90;
 
   // Pas de chat en local, on cache la boîte de chat
   $('chatBox').classList.add('hidden');
   $('controlsLabel').innerHTML =
-    `🕹️ <b>${n1}</b> (violet) : <b>ZQSD</b> &nbsp;•&nbsp; <b>${n2}</b> (cyan) : <b>Flèches</b> &nbsp;•&nbsp; Le chat 👑 attrape l'autre !`;
+    `💣 <b>${n1}</b> (violet) : <b>ZQSD</b> &nbsp;•&nbsp; <b>${n2}</b> (cyan) : <b>Flèches</b> &nbsp;•&nbsp; Refuse la bombe, le dernier la perd !`;
 
   showScreen('game');
   updateHud();
-  toast('🕹️ Mode local : la partie commence !');
+  toast('💣 Mode local : la partie commence !');
 
   // Timer local
   clearInterval(localTimer);
@@ -108,16 +114,17 @@ function startLocalGame() {
 
 function endLocalRound() {
   clearInterval(localTimer);
-  // Le chat gagne 1 point par manche jouée (il doit attraper l'autre)
+  // 🔥 En local aussi : le dernier porteur de la bombe perd la manche
   const it = players.get(itId);
-  if (it) it.score += 1;
-  showRoundEnd([...players.values()].map(p => ({ id: p.id, name: p.name, score: p.score })));
+  if (it) it.score -= 1;
+  showRoundEnd([...players.values()].map(p => ({ id: p.id, name: p.name, score: p.score })), itId);
   setTimeout(() => {
-    // Relance une manche : on inverse les positions et on change le chat
+    // Relance une manche : on inverse les positions et on change le porteur
     itId = itId === 'local-p1' ? 'local-p2' : 'local-p1';
     players.get('local-p1').x = 250; players.get('local-p1').y = 280;
     players.get('local-p2').x = 550; players.get('local-p2').y = 280;
     roundTime = 90;
+    lastLocalTagAt = 0;
     updateHud();
     localTimer = setInterval(() => {
       roundTime--;
@@ -127,7 +134,8 @@ function endLocalRound() {
   }, 5000);
 }
 
-// Vérifie si le chat local attrape l'autre joueur
+// Vérifie si le porteur local de la bombe la refile à l'autre joueur
+// ⏱️ Avec cooldown de 1 seconde pour éviter le bug de transfert en boucle
 function checkLocalTag() {
   const p1 = players.get('local-p1');
   const p2 = players.get('local-p2');
@@ -136,11 +144,13 @@ function checkLocalTag() {
   const other = itId === 'local-p1' ? p2 : p1;
   const dist = Math.hypot(it.x - other.x, it.y - other.y);
   if (dist < 42) {
-    // L'autre devient le chat, il gagne un point d'esquive
-    other.score += 1;
-    itId = other.id;
-    updateHud();
-    toast(`😱 ${other.name} est le nouveau chat !`);
+    const now = Date.now();
+    if (now - lastLocalTagAt >= TAG_COOLDOWN_MS) {
+      lastLocalTagAt = now;
+      itId = other.id;
+      updateHud();
+      toast(`💣 ${other.name} a récupéré la bombe !`);
+    }
   }
 }
 
@@ -191,10 +201,10 @@ ws.onmessage = (e) => {
       roundTime = msg.roundTime;
       $('chatLog').innerHTML = '';
       $('chatBox').classList.remove('hidden');
-      $('controlsLabel').innerHTML = '🎮 Déplace-toi avec les <b>flèches</b> ou <b>ZQSD / WASD</b> — le chat 👑 doit attraper tout le monde !';
+      $('controlsLabel').innerHTML = '🎮 Déplace-toi avec les <b>flèches</b> ou <b>ZQSD / WASD</b> — porte la 💣 bombe et refile-la avant la fin du timer !';
       showScreen('game');
       updateHud();
-      toast('🚀 La partie commence !');
+      toast('💣 La partie commence ! Ne garde pas la bombe !');
       break;
 
     case 'player_moved':
@@ -212,11 +222,15 @@ ws.onmessage = (e) => {
     case 'tagged':
       itId = msg.newIt;
       updateHud();
-      if (msg.newIt === myId) toast('😱 TU ES LE CHAT ! Cours après les autres !');
+      if (msg.newIt === myId) toast('💣 TU AS LA BOMBE ! Refuse-la vite !');
+      else {
+        const newIt = players.get(msg.newIt);
+        toast(`💣 ${newIt ? newIt.name : 'Quelqu\'un'} a la bombe !`);
+      }
       break;
 
     case 'round_end':
-      showRoundEnd(msg.scores);
+      showRoundEnd(msg.scores, msg.loser);
       break;
 
     case 'chat':
@@ -261,20 +275,19 @@ function updatePlayerCount() {
 // ---------- HUD ----------
 function updateHud() {
   const badge = $('roleBadge');
+  const it = players.get(itId);
   if (localMode) {
-    const it = players.get(itId);
     if (itId === myId) {
-      badge.textContent = `😱 ${it.name} : TU ES LE CHAT !`;
+      badge.textContent = `💣 ${it.name} : TU AS LA BOMBE !`;
     } else {
-      badge.textContent = `😱 ${it ? it.name : '???'} est le chat`;
+      badge.textContent = `💣 ${it ? it.name : '???'} a la bombe`;
     }
     badge.className = 'badge it';
   } else if (itId === myId) {
-    badge.textContent = '😱 TU ES LE CHAT !';
+    badge.textContent = '💣 TU AS LA BOMBE ! Refuse-la !';
     badge.className = 'badge it';
   } else {
-    const it = players.get(itId);
-    badge.textContent = `🏃 ${it ? it.name : '???'} est le chat`;
+    badge.textContent = `🏃 Évite ${it ? it.name : '???'} (💣 bombe)`;
     badge.className = 'badge runner';
   }
 
@@ -290,13 +303,14 @@ function updateHud() {
 }
 
 // ---------- Fin de manche ----------
-function showRoundEnd(scores) {
+function showRoundEnd(scores, loserId) {
   const ul = $('roundScores');
   ul.innerHTML = '';
   [...scores].sort((a, b) => b.score - a.score).forEach((s, i) => {
     const li = document.createElement('li');
     const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : '🔸';
-    li.textContent = `${medal}  ${s.name} — ${s.score} pts`;
+    const bombNote = (s.id === loserId) ? ' 💣 (a gardé la bombe ! -1)' : '';
+    li.textContent = `${medal}  ${s.name} — ${s.score} pts${bombNote}`;
     ul.appendChild(li);
   });
   players.forEach((p, id) => {
@@ -406,17 +420,17 @@ function draw() {
     ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(canvas.width, y); ctx.stroke();
   }
 
-  // Halo pulsant du chat
+  // 💣 Halo pulsant ROUGE/ORANGE autour du porteur de la bombe
   if (itId && players.has(itId)) {
     const it = players.get(itId);
-    const pulse = 26 + Math.sin(Date.now() / 200) * 6;
+    const pulse = 26 + Math.sin(Date.now() / 150) * 6;
     ctx.beginPath();
-    ctx.arc(it.x, it.y, pulse + 10, 0, Math.PI * 2);
-    ctx.fillStyle = 'rgba(239,68,68,.07)';
+    ctx.arc(it.x, it.y, pulse + 12, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(249,115,22,.06)';
     ctx.fill();
     ctx.beginPath();
     ctx.arc(it.x, it.y, pulse, 0, Math.PI * 2);
-    ctx.fillStyle = 'rgba(239,68,68,.15)';
+    ctx.fillStyle = 'rgba(239,68,68,.18)';
     ctx.fill();
   }
 
@@ -437,7 +451,7 @@ function draw() {
     ctx.fillStyle = p.color || '#8b5cf6';
     ctx.fill();
     ctx.lineWidth = isIt ? 4 : 2;
-    ctx.strokeStyle = isIt ? '#ef4444' : (isMe ? '#fff' : 'rgba(255,255,255,.4)');
+    ctx.strokeStyle = isIt ? '#f97316' : (isMe ? '#fff' : 'rgba(255,255,255,.4)');
     ctx.stroke();
 
     // Yeux
@@ -448,13 +462,19 @@ function draw() {
     ctx.beginPath(); ctx.arc(p.x - 5, p.y - 3, 2, 0, Math.PI * 2); ctx.fill();
     ctx.beginPath(); ctx.arc(p.x + 7, p.y - 3, 2, 0, Math.PI * 2); ctx.fill();
 
-    // Bouche (grimace si chat, sourire sinon)
+    // Bouche (inquiète si porteur de bombe, sourire sinon)
     ctx.strokeStyle = '#0f172a';
     ctx.lineWidth = 2;
     ctx.beginPath();
-    if (isIt) ctx.arc(p.x, p.y + 7, 7, Math.PI + 0.2, Math.PI * 2 - 0.2);
-    else ctx.arc(p.x, p.y + 4, 7, 0, Math.PI);
-    ctx.stroke();
+    if (isIt) {
+      // bouche ouverte (stress !)
+      ctx.ellipse(p.x, p.y + 7, 5, 6, 0, 0, Math.PI * 2);
+      ctx.fillStyle = '#0f172a';
+      ctx.fill();
+    } else {
+      ctx.arc(p.x, p.y + 4, 7, 0, Math.PI);
+      ctx.stroke();
+    }
 
     // Nom avec fond arrondi
     ctx.font = 'bold 13px Outfit, sans-serif';
@@ -472,10 +492,46 @@ function draw() {
     ctx.fillStyle = '#fff';
     ctx.fillText(label, p.x, p.y - 28);
 
-    // Couronne du chat
+    // 💣 Bombe au-dessus du porteur (remplace la couronne 👑)
     if (isIt) {
-      ctx.font = '20px serif';
-      ctx.fillText('👑', p.x, p.y - 52);
+      const bob = Math.sin(Date.now() / 200) * 3;
+      // ficelle
+      ctx.strokeStyle = '#94a3b8';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(p.x, p.y - 20);
+      ctx.lineTo(p.x + 4, p.y - 46 + bob);
+      ctx.stroke();
+      // bombe (corps noir)
+      ctx.beginPath();
+      ctx.arc(p.x, p.y - 52 + bob, 12, 0, Math.PI * 2);
+      ctx.fillStyle = '#1e293b';
+      ctx.fill();
+      ctx.lineWidth = 2;
+      ctx.strokeStyle = '#f97316';
+      ctx.stroke();
+      // reflet
+      ctx.beginPath();
+      ctx.arc(p.x - 4, p.y - 56 + bob, 3, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(255,255,255,.5)';
+      ctx.fill();
+      // mèche + étincelle animée
+      const spark = 3 + Math.sin(Date.now() / 100) * 2;
+      ctx.strokeStyle = '#78350f';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(p.x + 8, p.y - 60 + bob);
+      ctx.quadraticCurveTo(p.x + 16, p.y - 70 + bob, p.x + 14, p.y - 76 + bob);
+      ctx.stroke();
+      // étincelle orange qui pulse
+      ctx.beginPath();
+      ctx.arc(p.x + 14, p.y - 78 + bob, spark, 0, Math.PI * 2);
+      ctx.fillStyle = '#fbbf24';
+      ctx.fill();
+      ctx.beginPath();
+      ctx.arc(p.x + 14, p.y - 78 + bob, spark + 3, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(251,191,36,.3)';
+      ctx.fill();
     }
   });
 }
