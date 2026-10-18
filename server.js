@@ -37,9 +37,11 @@ const server = http.createServer((req, res) => {
 // ---------- Serveur WebSocket (jeu temps réel) ----------
 const wss = new WebSocket.Server({ server });
 
-const rooms = {}; // code -> { players: Map, state, it, roundTime, interval }
+const rooms = {}; // code -> { players: Map, state, it, roundTime, interval, lastTagAt }
 const COLORS = ['#ef4444', '#3b82f6', '#22c55e', '#eab308', '#a855f7', '#f97316', '#06b6d4', '#ec4899'];
 const ROUND_SECONDS = 90;
+const TAG_COOLDOWN_MS = 1000;  // cooldown de 1 seconde entre 2 transferts de bombe
+const TAG_DISTANCE = 42;
 
 function createRoomCode() {
   let code;
@@ -68,9 +70,10 @@ function startGame(roomCode) {
   if (!room || room.players.size < 2) return;
   room.state = 'playing';
 
-  // Choisir le chat (celui qui court)
+  // Choisir qui porte la bombe au départ
   const ids = [...room.players.keys()];
   room.it = ids[Math.floor(Math.random() * ids.length)];
+  room.lastTagAt = 0; // pas de cooldown au début
 
   // Répartir les joueurs sur la carte
   let i = 0;
@@ -106,12 +109,13 @@ function endRound(roomCode) {
   if (!room) return;
   clearInterval(room.interval);
 
-  // Le chat marque des points pour chaque joueur attrapé ce round
+  // 🔥 Le dernier joueur qui avait la bombe PERD : -1 point
   const itPlayer = room.players.get(room.it);
-  if (itPlayer) itPlayer.score += room.players.size - 1;
+  if (itPlayer) itPlayer.score -= 1;
 
   broadcast(room, {
     type: 'round_end',
+    loser: room.it,
     scores: [...room.players.entries()].map(([id, p]) => ({ id, name: p.name, score: p.score }))
   });
 
@@ -175,18 +179,26 @@ wss.on('connection', (ws) => {
       player.x = Math.max(25, Math.min(775, Number(msg.x) || 0));
       player.y = Math.max(25, Math.min(535, Number(msg.y) || 0));
 
-      // Le chat attrape un joueur ?
+      // 💣 Le porteur de la bombe essaie de la refiler à quelqu'un
       if (player.id === room.it) {
-        room.players.forEach((p, id) => {
-          if (id !== player.id) {
-            const dist = Math.hypot((p.x || 0) - player.x, (p.y || 0) - player.y);
-            if (dist < 42) {
-              room.it = id;      // le nouveau chat
-              p.score = (p.score || 0) + 1; // bonus d'esquive
-              broadcast(room, { type: 'tagged', newIt: id, tagged: player.id, by: id });
+        const now = Date.now();
+        // ⏱️ COOLDOWN : on ne peut pas refiler la bombe plus d'une fois par seconde
+        if (now - (room.lastTagAt || 0) >= TAG_COOLDOWN_MS) {
+          let tagged = null;
+          room.players.forEach((p, id) => {
+            if (id !== player.id && !tagged) {
+              const dist = Math.hypot((p.x || 0) - player.x, (p.y || 0) - player.y);
+              if (dist < TAG_DISTANCE) {
+                tagged = id;
+              }
             }
+          });
+          if (tagged) {
+            room.lastTagAt = now;          // active le cooldown
+            room.it = tagged;              // la bombe change de main
+            broadcast(room, { type: 'tagged', newIt: tagged, tagged: player.id, by: tagged });
           }
-        });
+        }
       }
 
       broadcast(room, { type: 'player_moved', id: player.id, x: player.x, y: player.y }, player.id);
@@ -206,12 +218,14 @@ wss.on('connection', (ws) => {
     if (room.players.size === 0) {
       endRoom(player.roomCode);
     } else if (room.state === 'playing' && player.id === room.it) {
+      // Si le porteur de la bombe quitte, on la donne à quelqu'un d'autre
       room.it = [...room.players.keys()][0];
+      room.lastTagAt = Date.now(); // cooldown pour éviter un transfert instantané
       broadcast(room, { type: 'tagged', newIt: room.it, tagged: null, by: room.it });
     }
   });
 });
 
 server.listen(PORT, () => {
-  console.log(`🎮 Tag Arena lancé sur http://localhost:${PORT}`);
+  console.log(`💣 Tag Arena (Hot Potato) lancé sur http://localhost:${PORT}`);
 });
