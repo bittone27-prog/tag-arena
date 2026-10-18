@@ -28,13 +28,13 @@
         <p class="tagline">Attrape tes amis… ou fuis-leur !</p>
       </div>
 
-      <!-- Carte pseudo -->
-      <div class="name-card">
+      <!-- Carte pseudo (joueur 1 / en ligne) -->
+      <div class="name-card" id="nameCard">
         <label for="playerName">🎭 Ton pseudo</label>
         <input id="playerName" type="text" maxlength="16" placeholder="Ex : Speedy" autocomplete="off">
       </div>
 
-      <!-- GROS BLOCS Créer / Rejoindre -->
+      <!-- GROS BLOCS : Créer / Rejoindre / 2 Joueurs -->
       <div class="big-blocks">
         <button id="btnCreate" class="big-block block-create">
           <span class="bb-icon">🎮</span>
@@ -49,6 +49,13 @@
           <span class="bb-sub">Entrer avec un code</span>
           <span class="bb-glow"></span>
         </button>
+
+        <button id="btnLocalToggle" class="big-block block-local">
+          <span class="bb-icon">🕹️</span>
+          <span class="bb-title">2 JOUEURS</span>
+          <span class="bb-sub">Même PC, écran partagé</span>
+          <span class="bb-glow"></span>
+        </button>
       </div>
 
       <!-- Bloc rejoindre (caché au départ) -->
@@ -58,6 +65,24 @@
           <input id="roomCode" type="text" maxlength="6" placeholder="ABC123" autocomplete="off">
           <button id="btnJoin" class="btn-go">GO ➜</button>
         </div>
+      </div>
+
+      <!-- Bloc 2 joueurs local (caché au départ) -->
+      <div id="localBox" class="join-box local-box hidden">
+        <label>🕹️ Mode 2 joueurs — même clavier</label>
+        <div class="local-names">
+          <div class="local-field">
+            <span class="local-tag tag-p1">Joueur 1</span>
+            <input id="localName1" type="text" maxlength="16" placeholder="Pseudo J1" autocomplete="off" value="Joueur 1">
+            <span class="local-keys">⌨️ ZQSD</span>
+          </div>
+          <div class="local-field">
+            <span class="local-tag tag-p2">Joueur 2</span>
+            <input id="localName2" type="text" maxlength="16" placeholder="Pseudo J2" autocomplete="off" value="Joueur 2">
+            <span class="local-keys">⌨️ Flèches</span>
+          </div>
+        </div>
+        <button id="btnLocalStart" class="btn-go btn-local-go">▶ LANCER EN LOCAL</button>
       </div>
 
       <!-- Stats fun -->
@@ -108,10 +133,10 @@
     <div class="canvas-wrap">
       <canvas id="canvas" width="800" height="560"></canvas>
     </div>
-    <p class="controls">🎮 Déplace-toi avec les <b>flèches</b> ou <b>ZQSD / WASD</b> — le chat 👑 doit attraper tout le monde !</p>
+    <p class="controls" id="controlsLabel">🎮 Déplace-toi avec les <b>flèches</b> ou <b>ZQSD / WASD</b> — le chat 👑 doit attraper tout le monde !</p>
 
-    <!-- Chat en panneau -->
-    <div class="chat-box">
+    <!-- Chat en panneau (caché en mode local) -->
+    <div class="chat-box" id="chatBox">
       <div class="chat-head">💬 Chat du salon</div>
       <ul id="chatLog"></ul>
       <div class="chat-input">
