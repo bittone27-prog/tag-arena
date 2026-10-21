@@ -1,163 +1,760 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>🏃 Tag Arena — Joue avec tes amis</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Platform Arena | Tableau de bord</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-dark: #0c0e11;
+            --panel-bg: #15191f;
+            --border: #303943;
+            --acid-green: #d6ff3f;
+            --orange: #ff713b;
+            --cyan: #63d8d3;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'DM Mono', monospace;
+            background-color: var(--bg-dark);
+            color: #a0a0a0;
+            overflow-x: hidden;
+            min-height: 100vh;
+            position: relative;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image:
+                linear-gradient(rgba(255,255,255,.02) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255,255,255,.02) 1px, transparent 1px);
+            background-size: 40px 40px;
+            pointer-events: none;
+            opacity: 0.3;
+            z-index: -1;
+        }
+
+        .menu-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 2rem;
+            background-color: var(--panel-bg);
+            border-bottom: 1px solid var(--border);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .logo-icon {
+            width: 32px;
+            height: 32px;
+        }
+
+        .system-status {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            background-color: var(--acid-green);
+            border-radius: 50%;
+            box-shadow: 0 0 10px var(--acid-green);
+            animation: pulse 2s infinite;
+        }
+
+        .status-dot.off {
+            background-color: #444;
+            box-shadow: none;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .nav-tabs {
+            display: flex;
+            gap: 1.5rem;
+        }
+
+        .nav-tab {
+            padding: 0.5rem 1rem;
+            color: #a0a0a0;
+            text-decoration: none;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            border-bottom: 2px solid transparent;
+            position: relative;
+        }
+
+        .nav-tab:hover {
+            color: var(--acid-green);
+        }
+
+        .nav-tab.active {
+            color: var(--acid-green);
+            border-bottom-color: var(--acid-green);
+        }
+
+        .main-content {
+            padding: 2rem;
+            max-width: 1400px;
+            margin: 0 auto;
+            min-height: calc(100vh - 60px);
+        }
+
+        .screen {
+            display: none;
+            animation: fadeInUp 0.6s ease forwards;
+        }
+
+        .screen.active {
+            display: block;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .welcome-screen {
+            text-align: center;
+            padding: 4rem 1rem;
+        }
+
+        .welcome-title {
+            font-family: 'Barlow Condensed', sans-serif;
+            font-size: clamp(3rem, 8vw, 6rem);
+            font-weight: 700;
+            color: var(--acid-green);
+            letter-spacing: 0.2em;
+            margin-bottom: 1rem;
+            text-shadow: 0 0 10px var(--acid-green);
+            position: relative;
+        }
+
+        .welcome-title::after {
+            content: 'PLATFORM ARENA';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: clamp(8rem, 20vw, 16rem);
+            color: rgba(214, 255, 63, 0.08);
+            z-index: -1;
+            user-select: none;
+        }
+
+        .welcome-subtitle {
+            font-size: 1.2rem;
+            margin-bottom: 2rem;
+            color: #e0e0e0;
+        }
+
+        .action-button {
+            display: inline-block;
+            padding: 1rem 2.5rem;
+            background-color: var(--acid-green);
+            color: #0c0e11;
+            text-decoration: none;
+            font-weight: 700;
+            font-size: 1rem;
+            border-radius: 4px;
+            box-shadow: 4px 4px 0 var(--orange);
+            transition: all 0.2s ease;
+            margin: 0.5rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        .action-button:hover {
+            transform: translate(2px, 2px);
+            box-shadow: 2px 2px 0 var(--orange);
+        }
+
+        .action-button:active {
+            transform: translate(4px, 4px);
+            box-shadow: 0 0 0 var(--orange);
+        }
+
+        .mission-card {
+            background-color: var(--panel-bg);
+            border: 2px solid var(--border);
+            padding: 2rem;
+            margin: 2rem auto;
+            max-width: 400px;
+            transform: rotate(-2deg);
+            box-shadow: 6px 6px 0 rgba(0,0,0,0.3);
+            position: relative;
+        }
+
+        .mission-label {
+            background-color: var(--orange);
+            color: white;
+            padding: 0.25rem 0.75rem;
+            font-size: 0.8rem;
+            font-weight: 700;
+            display: inline-block;
+            margin-bottom: 1rem;
+        }
+
+        .mission-title {
+            font-family: 'Barlow Condensed', sans-serif;
+            font-size: 2rem;
+            color: var(--acid-green);
+            margin-bottom: 1rem;
+        }
+
+        .mission-stats {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 1.5rem;
+        }
+
+        .stat {
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--acid-green);
+        }
+
+        .stat-label {
+            font-size: 0.8rem;
+            color: #a0a0a0;
+        }
+
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+            margin-top: 2rem;
+        }
+
+        .panel {
+            background-color: var(--panel-bg);
+            border: 1px solid var(--border);
+            padding: 1.5rem;
+            border-radius: 0;
+        }
+
+        .panel-title {
+            font-family: 'Barlow Condensed', sans-serif;
+            font-size: 1.2rem;
+            color: var(--acid-green);
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .panel-title::before {
+            content: '//';
+            color: var(--orange);
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background-color: var(--border);
+            margin: 1rem 0;
+            border-radius: 0;
+            position: relative;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background-color: var(--acid-green);
+            width: 0%;
+            transition: width 0.5s ease;
+        }
+
+        .progress-label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.8rem;
+            margin-top: 0.25rem;
+        }
+
+        .checkbox-group {
+            margin: 1rem 0;
+        }
+
+        .checkbox-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 0.75rem;
+            padding: 0.5rem;
+            border: 1px solid var(--border);
+            transition: all 0.2s ease;
+        }
+
+        .checkbox-item:hover {
+            border-color: var(--acid-green);
+        }
+
+        .checkbox-item input[type="checkbox"] {
+            margin-right: 0.75rem;
+        }
+
+        .callout {
+            background-color: rgba(214, 255, 63, 0.1);
+            border-left: 4px solid var(--acid-green);
+            padding: 1rem;
+            margin: 1rem 0;
+        }
+
+        .parties-list {
+            margin-top: 2rem;
+        }
+
+        .party-card {
+            background-color: var(--panel-bg);
+            border: 2px solid var(--border);
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.3s ease;
+        }
+
+        .party-card:hover {
+            border-color: var(--acid-green);
+        }
+
+        .party-info h3 {
+            color: var(--acid-green);
+            margin-bottom: 0.5rem;
+        }
+
+        .party-details {
+            display: flex;
+            gap: 1rem;
+            font-size: 0.9rem;
+        }
+
+        .party-meta {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .party-meta span {
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+        }
+
+        .settings-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-top: 2rem;
+        }
+
+        .setting-item {
+            background-color: var(--panel-bg);
+            border: 1px solid var(--border);
+            padding: 1rem;
+        }
+
+        .setting-title {
+            font-family: 'Barlow Condensed', sans-serif;
+            font-size: 1.1rem;
+            color: var(--acid-green);
+            margin-bottom: 0.75rem;
+        }
+
+        select, input[type="range"] {
+            width: 100%;
+            padding: 0.5rem;
+            background-color: var(--bg-dark);
+            border: 1px solid var(--border);
+            color: var(--acid-green);
+            margin-top: 0.5rem;
+        }
+
+        .pill {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            background-color: rgba(255, 255, 255, 0.1);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            font-size: 0.8rem;
+            margin-left: 0.5rem;
+        }
+
+        .pill.green { background-color: rgba(214, 255, 63, 0.2); border-color: var(--acid-green); }
+        .pill.orange { background-color: rgba(255, 113, 59, 0.2); border-color: var(--orange); }
+        .pill.cyan { background-color: rgba(99, 216, 211, 0.2); border-color: var(--cyan); }
+
+        .timer-display {
+            font-family: 'Barlow Condensed', sans-serif;
+            font-size: 2rem;
+            color: var(--acid-green);
+            text-align: center;
+            margin: 1rem 0;
+        }
+
+        .health-warning {
+            background-color: rgba(255, 50, 50, 0.15);
+            border-left: 4px solid #ff3232;
+            padding: 1rem;
+            margin: 1rem 0;
+            font-size: 0.9rem;
+        }
+
+        .footer {
+            text-align: center;
+            padding: 2rem;
+            margin-top: 3rem;
+            border-top: 1px solid var(--border);
+            color: #555;
+            font-size: 0.8rem;
+        }
+
+        @media (max-width: 768px) {
+            .menu-bar {
+                flex-direction: column;
+                gap: 1rem;
+            }
+
+            .nav-tabs {
+                width: 100%;
+                overflow-x: auto;
+                justify-content: center;
+            }
+
+            .welcome-screen {
+                padding: 2rem 1rem;
+            }
+
+            .dashboard-grid, .settings-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .mission-card {
+                transform: rotate(0deg);
+            }
+        }
+
+        [role="button"], button, a {
+            cursor: pointer;
+        }
+
+        .sr-only {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            white-space: nowrap;
+            border-width: 0;
+        }
+    </style>
 </head>
 <body>
-  <!-- Fond animé : orbes + grille -->
-  <div class="bg">
-    <div class="orb orb-1"></div>
-    <div class="orb orb-2"></div>
-    <div class="orb orb-3"></div>
-    <div class="grid"></div>
-  </div>
-
-  <!-- ============ ÉCRAN ACCUEIL ============ -->
-  <div id="menu" class="screen">
-    <div class="menu-wrap">
-      <!-- Logo animé -->
-      <div class="logo-block">
-        <div class="logo-icon">🏃</div>
-        <h1 class="logo-title">TAG<span>ARENA</span></h1>
-        <p class="tagline">Attrape tes amis… ou fuis-leur !</p>
-      </div>
-
-      <!-- Carte pseudo (joueur 1 / en ligne) -->
-      <div class="name-card" id="nameCard">
-        <label for="playerName">🎭 Ton pseudo</label>
-        <input id="playerName" type="text" maxlength="16" placeholder="Ex : Speedy" autocomplete="off">
-      </div>
-
-      <!-- GROS BLOCS : Créer / Rejoindre / 2 Joueurs -->
-      <div class="big-blocks">
-        <button id="btnCreate" class="big-block block-create">
-          <span class="bb-icon">🎮</span>
-          <span class="bb-title">CRÉER</span>
-          <span class="bb-sub">Nouveau salon privé</span>
-          <span class="bb-glow"></span>
-        </button>
-
-        <button id="btnJoinToggle" class="big-block block-join">
-          <span class="bb-icon">🔑</span>
-          <span class="bb-title">REJOINDRE</span>
-          <span class="bb-sub">Entrer avec un code</span>
-          <span class="bb-glow"></span>
-        </button>
-
-        <button id="btnLocalToggle" class="big-block block-local">
-          <span class="bb-icon">🕹️</span>
-          <span class="bb-title">2 JOUEURS</span>
-          <span class="bb-sub">Même PC, écran partagé</span>
-          <span class="bb-glow"></span>
-        </button>
-      </div>
-
-      <!-- Bloc rejoindre (caché au départ) -->
-      <div id="joinBox" class="join-box hidden">
-        <label for="roomCode">🔢 Code du salon</label>
-        <div class="join-row">
-          <input id="roomCode" type="text" maxlength="6" placeholder="ABC123" autocomplete="off">
-          <button id="btnJoin" class="btn-go">GO ➜</button>
-        </div>
-      </div>
-
-      <!-- Bloc 2 joueurs local (caché au départ) -->
-      <div id="localBox" class="join-box local-box hidden">
-        <label>🕹️ Mode 2 joueurs — même clavier</label>
-        <div class="local-names">
-          <div class="local-field">
-            <span class="local-tag tag-p1">Joueur 1</span>
-            <input id="localName1" type="text" maxlength="16" placeholder="Pseudo J1" autocomplete="off" value="Joueur 1">
-            <span class="local-keys">⌨️ ZQSD</span>
-          </div>
-          <div class="local-field">
-            <span class="local-tag tag-p2">Joueur 2</span>
-            <input id="localName2" type="text" maxlength="16" placeholder="Pseudo J2" autocomplete="off" value="Joueur 2">
-            <span class="local-keys">⌨️ Flèches</span>
-          </div>
-        </div>
-        <button id="btnLocalStart" class="btn-go btn-local-go">▶ LANCER EN LOCAL</button>
-      </div>
-
-      <!-- Stats fun -->
-      <div class="menu-footer">
-        <span>⚡ Temps réel</span>
-        <span>•</span>
-        <span>👥 Jusqu'à 8 joueurs</span>
-        <span>•</span>
-        <span>💬 Chat intégré</span>
-      </div>
-    </div>
-  </div>
-
-  <!-- ============ SALON ============ -->
-  <div id="lobby" class="screen hidden">
-    <div class="lobby-wrap">
-      <div class="lobby-card">
-        <h2 class="lobby-title">🚪 Salon privé</h2>
-
-        <!-- Code géant à copier -->
-        <div class="code-block" id="btnCopy" title="Clique pour copier">
-          <span class="code-label">CODE DU SALON</span>
-          <span id="lobbyCode" class="code-big">------</span>
-          <span class="code-hint">📋 Clique pour copier</span>
+    <header class="menu-bar" role="menubar">
+        <div class="logo">
+            <svg class="logo-icon" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <rect x="4" y="8" width="24" height="16" rx="2" fill="var(--acid-green)"/>
+                <rect x="8" y="12" width="16" height="8" rx="1" fill="#0c0e11"/>
+            </svg>
+            <span style="font-family: 'Barlow Condensed', sans-serif; font-size: 1.5rem; font-weight: 700; color: var(--acid-green);">PLATFORM ARENA</span>
         </div>
 
-        <!-- Liste joueurs -->
-        <div class="players-block">
-          <h3>👥 Joueurs <span id="playerCount" class="count-badge">1</span></h3>
-          <ul id="playerList" class="player-list"></ul>
+        <div class="system-status">
+            <span style="color: #a0a0a0;">SYSTÈME</span>
+            <span style="color: var(--acid-green); font-weight: 700;">PRÊT</span>
+            <span class="status-dot"></span>
         </div>
 
-        <button id="btnStart" class="btn-start hidden">▶ LANCER LA PARTIE</button>
-        <p id="lobbyHint" class="hint">⏳ En attente d'au moins 2 joueurs…</p>
+        <nav class="nav-tabs">
+            <a href="#home" class="nav-tab active" role="tab" aria-selected="true">ACCUEIL</a>
+            <a href="#dashboard" class="nav-tab" role="tab">TABLEAU DE BORD</a>
+            <a href="#parties" class="nav-tab" role="tab">PARTIES</a>
+            <a href="#settings" class="nav-tab" role="tab">PARAMÈTRES</a>
+        </nav>
+    </header>
 
-        <button id="btnLeaveLobby" class="btn-leave">← Quitter le salon</button>
-      </div>
-    </div>
-  </div>
+    <main class="main-content">
+        <section id="home" class="screen active" role="tabpanel">
+            <div class="welcome-screen">
+                <h1 class="welcome-title">BIENVENUE SUR PLATFORM ARENA</h1>
+                <p class="welcome-subtitle">Joue en solo ou à deux, défie tes amis, et maîtrise la bombe avant qu'elle n'explose !</p>
+                
+                <a href="#dashboard" class="action-button" role="button">LANCER UNE PARTIE</a>
 
-  <!-- ============ JEU ============ -->
-  <div id="game" class="screen hidden">
-    <div class="hud">
-      <div id="timer" class="timer">⏱ 90</div>
-      <div id="roleBadge" class="badge"></div>
-      <div id="scoreboard" class="scoreboard"></div>
-    </div>
-    <div class="canvas-wrap">
-      <canvas id="canvas" width="800" height="560"></canvas>
-    </div>
-    <p class="controls" id="controlsLabel">🎮 Déplace-toi avec les <b>flèches</b> ou <b>ZQSD / WASD</b> — le chat 👑 doit attraper tout le monde !</p>
+                <div class="mission-card">
+                    <div class="mission-label">MISSION 01</div>
+                    <h2 class="mission-title">DÉFIE TES AMIS</h2>
+                    <div class="mission-stats">
+                        <div class="stat">
+                            <div class="stat-value">42</div>
+                            <div class="stat-label">PARTIES</div>
+                        </div>
+                        <div class="stat">
+                            <div class="stat-value">12</div>
+                            <div class="stat-label">VICTOIRES</div>
+                        </div>
+                        <div class="stat">
+                            <div class="stat-value">98%</div>
+                            <div class="stat-label">TQM</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
 
-    <!-- Chat en panneau (caché en mode local) -->
-    <div class="chat-box" id="chatBox">
-      <div class="chat-head">💬 Chat du salon</div>
-      <ul id="chatLog"></ul>
-      <div class="chat-input">
-        <input id="chatInput" type="text" maxlength="200" placeholder="Écris un message…">
-        <button id="btnSend" class="btn-send">➤</button>
-      </div>
-    </div>
-  </div>
+        <section id="dashboard" class="screen" role="tabpanel">
+            <h2 style="font-family: 'Barlow Condensed', sans-serif; font-size: 2.5rem; color: var(--acid-green); margin-bottom: 1rem;">// TABLEAU DE BORD</h2>
+            
+            <div class="dashboard-grid">
+                <div class="panel">
+                    <h3 class="panel-title">NIVEAU ACTUEL</h3>
+                    <div style="text-align: center; margin: 1rem 0;">
+                        <div style="font-size: 4rem; color: var(--acid-green); font-weight: 700;">3</div>
+                        <div style="font-size: 1.2rem; color: #a0a0a0; margin-top: 0.5rem;">NIVEAU 3 / 10</div>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width: 65%;" data-progress="65"></div>
+                    </div>
+                    <div class="progress-label">
+                        <span>650 / 1000 XP</span>
+                        <span class="pill green">+50 XP cette semaine</span>
+                    </div>
+                    <div class="callout">
+                        <p style="margin: 0;">Gagne 350 XP de plus pour débloquer un nouveau personnage !</p>
+                    </div>
+                </div>
 
-  <!-- Toast -->
-  <div id="toast" class="toast hidden"></div>
+                <div class="panel">
+                    <h3 class="panel-title">MISSIONS HEBDO</h3>
+                    <div class="checkbox-group">
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="mission1" checked>
+                            <label for="mission1">Gagner 3 parties en mode 2 joueurs</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="mission2">
+                            <label for="mission2">Débloquer un nouveau personnage</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="mission3">
+                            <label for="mission3">Partager votre score sur Twitter</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="mission4">
+                            <label for="mission4">Découvrir le téléporteur secret</label>
+                        </div>
+                    </div>
+                </div>
 
-  <!-- Overlay fin de manche -->
-  <div id="roundOverlay" class="overlay hidden">
-    <div class="overlay-card">
-      <h2>🏁 Fin de manche !</h2>
-      <ul id="roundScores"></ul>
-      <p class="overlay-sub">Nouvelle manche dans 5s…</p>
-    </div>
-  </div>
+                <div class="panel">
+                    <h3 class="panel-title">STATISTIQUES RÉCENTES</h3>
+                    <div style="display: flex; justify-content: space-around; margin: 1.5rem 0;">
+                        <div style="text-align: center;">
+                            <div style="font-size: 2.5rem; color: var(--acid-green);">24</div>
+                            <div style="font-size: 0.8rem; color: #a0a0a0;">PARTIES JOUÉES</div>
+                        </div>
+                        <div style="text-align: center;">
+                            <div style="font-size: 2.5rem; color: var(--orange);">8</div>
+                            <div style="font-size: 0.8rem; color: #a0a0a0;">VICTOIRES</div>
+                        </div>
+                        <div style="text-align: center;">
+                            <div style="font-size: 2.5rem; color: var(--cyan);">62%</div>
+                            <div style="font-size: 0.8rem; color: #a0a0a0;">TAUX DE PASSAGE</div>
+                        </div>
+                    </div>
+                    <div style="text-align: center;">
+                        <div class="pill green">🔥 Top 10% cette semaine</div>
+                    </div>
+                </div>
 
-  <script src="game.js"></script>
+                <div class="panel">
+                    <h3 class="panel-title">SESSION ACTIVE</h3>
+                    <div class="timer-display" id="sessionTimer">05:23</div>
+                    <div style="text-align: center; margin-top: 1rem;">
+                        <button id="endSession" class="action-button" style="padding: 0.5rem 1.5rem; font-size: 0.9rem;">TERMINER LA PARTIE</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="parties" class="screen" role="tabpanel">
+            <h2 style="font-family: 'Barlow Condensed', sans-serif; font-size: 2.5rem; color: var(--acid-green); margin-bottom: 1rem;">// MES PARTIES</h2>
+            
+            <p style="margin-bottom: 1.5rem;">Historique de tes parties sauvegardées. Clique sur une partie pour la reprendre ou voir les détails.</p>
+
+            <div class="parties-list" id="partiesList"></div>
+        </section>
+
+        <section id="settings" class="screen" role="tabpanel">
+            <h2 style="font-family: 'Barlow Condensed', sans-serif; font-size: 2.5rem; color: var(--acid-green); margin-bottom: 1rem;">// PARAMÈTRES</h2>
+            
+            <div class="settings-grid">
+                <div class="setting-item">
+                    <h3 class="setting-title">// CONFIGURATION DU JEU</h3>
+                    <label for="keybinds">Touches de jeu :</label>
+                    <select id="keybinds">
+                        <option value="zqsd">ZQSD (par défaut)</option>
+                        <option value="arrows">Flèches</option>
+                        <option value="wasd">WASD</option>
+                    </select>
+                </div>
+
+                <div class="setting-item">
+                    <h3 class="setting-title">// VOLUME</h3>
+                    <label for="volume">Volume des effets sonores :</label>
+                    <input type="range" id="volume" min="0" max="100" value="70">
+                    <div style="text-align: right;"><span id="volumeValue">70%</span></div>
+                </div>
+
+                <div class="setting-item">
+                    <h3 class="setting-title">// GRAPHIQUES</h3>
+                    <label for="graphics">Qualité graphique :</label>
+                    <select id="graphics">
+                        <option value="high">Élevée (recommandé)</option>
+                        <option value="medium">Moyenne</option>
+                        <option value="low">Basse</option>
+                    </select>
+                </div>
+
+                <div class="setting-item">
+                    <h3 class="setting-title">// SAUVEGARDE</h3>
+                    <button id="saveData" class="action-button" style="padding: 0.5rem 1.5rem; font-size: 0.9rem; width: 100%;">SAUVEGARDER LES PARAMÈTRES</button>
+                    <div class="callout" style="margin-top: 1rem;">
+                        <p style="margin: 0;">Toutes tes données sont sauvegardées localement dans ton navigateur.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="health-warning">
+                ⚠️ <strong>Prenez des pauses régulières</strong> : Jouez par sessions de 30-45 minutes pour préserver votre concentration et votre bien-être.
+            </div>
+        </section>
+    </main>
+
+    <footer class="footer">
+        <p>© 2026 Platform Arena — Un jeu multijoueur made by bittone27 🚀</p>
+        <p style="margin-top: 0.5rem; font-size: 0.8rem;">Toutes les données sont stockées localement. Aucune donnée personnelle n'est transmise.</p>
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            document.querySelectorAll('.nav-tab').forEach(tab => {
+                tab.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+                    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+                    tab.classList.add('active');
+                    const target = document.querySelector(tab.getAttribute('href'));
+                    target.classList.add('active');
+                    document.querySelectorAll('[role="tab"]').forEach(t => t.setAttribute('aria-selected', 'false'));
+                    tab.setAttribute('aria-selected', 'true');
+                });
+            });
+
+            updateTimer();
+            setInterval(updateTimer, 1000);
+
+            document.querySelectorAll('.checkbox-item input[type="checkbox"]').forEach(checkbox => {
+                if (checkbox.checked) {
+                    checkbox.nextElementSibling.style.textDecoration = 'line-through';
+                }
+                checkbox.addEventListener('change', () => {
+                    if (checkbox.checked) {
+                        checkbox.nextElementSibling.style.textDecoration = 'line-through';
+                    } else {
+                        checkbox.nextElementSibling.style.textDecoration = 'none';
+                    }
+                });
+            });
+
+            document.getElementById('saveData').addEventListener('click', () => {
+                const settings = {
+                    keybinds: document.getElementById('keybinds').value,
+                    volume: document.getElementById('volume').value,
+                    graphics: document.getElementById('graphics').value,
+                    timestamp: new Date().toISOString()
+                };
+                localStorage.setItem('platformArenaSettings', JSON.stringify(settings));
+                alert('✅ Paramètres sauvegardés avec succès !');
+            });
+
+            function updateTimer() {
+                const timer = document.getElementById('sessionTimer');
+                if (timer) {
+                    const minutes = Math.floor(Date.now() / 60000) % 60;
+                    const seconds = Math.floor(Date.now() / 1000) % 60;
+                    timer.textContent = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+                }
+            }
+
+            function loadParties() {
+                const parties = JSON.parse(localStorage.getItem('platformArenaParties') || '[]');
+                const container = document.getElementById('partiesList');
+                if (parties.length === 0) {
+                    container.innerHTML = '<p style="text-align: center; color: #555; margin: 2rem 0;">Aucune partie sauvegardée pour l\'instant.</p>';
+                    return;
+                }
+                parties.forEach((party, index) => {
+                    const card = document.createElement('div');
+                    card.className = 'party-card';
+                    card.innerHTML = `
+                        <div class="party-info">
+                            <h3>${party.name || 'Partie #' + (index + 1)}</h3>
+                            <div class="party-details">
+                                <span>📅 ${party.date || 'Aujourd\'hui'}</span>
+                                <span>👥 ${party.players || '2 joueurs'}</span>
+                                <span class="pill green">Niveau ${party.level || 1}</span>
+                            </div>
+                        </div>
+                        <div class="party-meta">
+                            <span>${party.xp || 0} XP</span>
+                            <span class="pill ${party.win ? 'green' : 'orange'} ">${party.win ? 'VICTOIRE' : 'DÉFAITE'}</span>
+                            <button style="background: none; border: none; color: var(--acid-green); cursor: pointer; font-size: 1.2rem;">▶</button>
+                        </div>
+                    `;
+                    container.appendChild(card);
+                });
+            }
+            loadParties();
+        });
+    </script>
 </body>
 </html>
